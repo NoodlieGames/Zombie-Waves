@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Zombie Waves: Multiplayer</title>
+    <title>Zombie Waves: Boss Fights</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Creepster&family=Roboto:wght@400;700&display=swap');
 
@@ -16,8 +16,11 @@
             user-select: none;
         }
 
-        #gameCanvas { display: block; }
+        #gameCanvas {
+            display: block;
+        }
 
+        /* UI LAYOUT */
         #ui-layer {
             position: absolute;
             top: 0;
@@ -45,29 +48,65 @@
         .wave-box span { color: #ff4444; }
         .ammo-box { color: #00e5ff; margin-top: 5px; font-size: 18px; }
 
-        .screen {
+        /* Boss Bar */
+        #boss-ui {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 500px;
+            text-align: center;
+            transition: opacity 0.5s;
+        }
+        #boss-name { font-family: 'Creepster', cursive; color: #ff0000; font-size: 24px; text-shadow: 0 0 10px #000; margin-bottom: 5px; }
+        #boss-bar-container { height: 12px; background: #222; border: 2px solid #fff; border-radius: 6px; overflow: hidden; }
+        #boss-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff0000, #990000); transition: width 0.1s; }
+
+        /* SCREENS */
+        #start-screen, #game-over-screen, #shop-screen {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.95);
+            background: rgba(0, 0, 0, 0.92);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             color: #fff;
             pointer-events: auto;
-            z-index: 100;
-            text-align: center;
+            z-index: 10;
+            overflow-y: auto;
         }
 
         h1 {
             font-family: 'Creepster', cursive;
-            font-size: 64px;
+            font-size: 60px;
             color: #bd0000;
             margin: 10px 0;
             text-shadow: 0 0 15px #500000;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .coin-display {
+            font-size: 24px;
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .coin-icon {
+            width: 24px;
+            height: 24px;
+            background: #ffd700;
+            border-radius: 50%;
+            border: 2px solid #b7950b;
+            display: inline-block;
         }
 
         .btn {
@@ -83,37 +122,52 @@
             box-shadow: 0 4px 0 #600000;
             text-transform: uppercase;
             letter-spacing: 2px;
-            margin: 8px;
+            margin: 5px;
         }
         .btn:hover { background: #ff1a1a; transform: scale(1.05); }
         .btn:active { transform: scale(0.95); box-shadow: 0 2px 0 #600000; }
-        .btn-blue { background: #3498db; box-shadow: 0 4px 0 #2980b9; }
-
+        .btn-shop { background: #e67e22; box-shadow: 0 4px 0 #a04000; }
+        .btn-back { background: #7f8c8d; box-shadow: 0 4px 0 #2c3e50; font-size: 18px; padding: 10px 20px;}
+        
         .hidden { display: none !important; }
 
-        #health-bar-container { width: 200px; height: 15px; background: #333; border: 1px solid #fff; border-radius: 8px; overflow: hidden; margin-top: 5px; }
+        #health-bar-container {
+            width: 200px;
+            height: 20px;
+            background: #333;
+            border: 2px solid #000;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
         #health-bar-fill { width: 100%; height: 100%; background: #00ff00; transition: width 0.2s; }
 
-        .form-group { margin: 15px 0; width: 300px; text-align: left; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #ccc; }
-        input, select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #222; color: #fff; }
-
-        .room-info { background: #222; padding: 20px; border-radius: 10px; border: 1px solid #bd0000; margin-bottom: 20px; }
-        .copy-link { background: #333; padding: 10px; border-radius: 5px; font-family: monospace; cursor: pointer; margin-top: 10px; word-break: break-all; }
-        
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #27ae60;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s;
+        /* SELECTORS */
+        .selector-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
         }
+        .selector-box {
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #444;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .selector-controls { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+        .arrow-btn { background: #444; color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold; }
+        .item-name { color: #ffd700; font-family: 'Creepster', cursive; font-size: 18px; letter-spacing: 1px; }
+
+        /* SHOP GRID */
+        .shop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 600px; margin-bottom: 20px; padding: 10px; }
+        .shop-item { background: #2c3e50; padding: 15px; border-radius: 8px; border: 2px solid #34495e; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
+        .shop-item h3 { margin: 0 0 5px 0; color: #3498db; }
+        .cost { color: #ffd700; font-weight: bold; margin-bottom: 5px; }
+        .buy-btn { background: #27ae60; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
+        .buy-btn:disabled { background: #7f8c8d; cursor: not-allowed; opacity: 0.7; }
+        .owned-badge { background: #8e44ad; color: white; padding: 8px; border-radius: 4px; font-weight: bold; }
+
     </style>
 </head>
 <body>
@@ -124,281 +178,311 @@
         <div class="hud-top">
             <div class="hud-col">
                 <div class="score-box">SCORE: <span id="scoreDisplay">0</span></div>
-                <div class="ammo-box" id="ammoDisplay">∞ / ∞</div>
+                <div class="score-box">COINS: <span id="hudCoinsDisplay">0</span></div>
             </div>
             <div style="display:flex; flex-direction:column; align-items:center;">
                 <div class="wave-box">WAVE <span id="waveDisplay">1</span></div>
                 <div id="health-bar-container"><div id="health-bar-fill"></div></div>
+                <div class="ammo-box" id="ammoDisplay">∞ / ∞</div>
             </div>
         </div>
+
+        <div id="boss-ui" class="hidden">
+            <div id="boss-name">THE ABOMINATION</div>
+            <div id="boss-bar-container"><div id="boss-bar-fill"></div></div>
+        </div>
     </div>
 
-    <div id="main-menu" class="screen">
+    <div id="start-screen">
         <h1>ZOMBIE WAVES</h1>
-        <button class="btn" onclick="window.showScreen('mode-selection')">START GAME</button>
-        <button class="btn btn-blue">ARMORY</button>
-    </div>
-
-    <div id="mode-selection" class="screen hidden">
-        <h1>CHOOSE MODE</h1>
-        <button class="btn" onclick="window.initSinglePlayer()">SINGLE PLAYER</button>
-        <button class="btn btn-blue" onclick="window.showScreen('multiplayer-setup')">MULTIPLAYER</button>
-        <button class="btn btn-blue" style="background:#555; box-shadow:0 4px 0 #333" onclick="window.showScreen('main-menu')">BACK</button>
-    </div>
-
-    <div id="multiplayer-setup" class="screen hidden">
-        <h1>MULTIPLAYER</h1>
-        <div class="form-group">
-            <label>Room Name</label>
-            <input type="text" id="roomNameInput" placeholder="Slayer's Den">
+        <div class="coin-display"><div class="coin-icon"></div> <span id="menuCoinDisplay">0</span></div>
+        <div class="selector-container">
+            <div class="selector-box">
+                <div class="item-label">Skin</div>
+                <canvas id="skinPreviewCanvas" width="60" height="60"></canvas>
+                <div class="item-name" id="skinName">Rookie</div>
+                <div class="selector-controls">
+                    <button class="arrow-btn" id="prevSkin">&lt;</button>
+                    <button class="arrow-btn" id="nextSkin">&gt;</button>
+                </div>
+            </div>
+            <div class="selector-box">
+                <div class="item-label">Weapon</div>
+                <div style="height:60px; display:flex; align-items:center; justify-content:center; font-size:30px;">🔫</div>
+                <div class="item-name" id="weaponName">Pistol</div>
+                <div class="selector-controls">
+                    <button class="arrow-btn" id="prevWeapon">&lt;</button>
+                    <button class="arrow-btn" id="nextWeapon">&gt;</button>
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-            <label>Wave Limit</label>
-            <select id="waveLimitInput">
-                <option value="10">Short (10 Waves)</option>
-                <option value="20">Medium (20 Waves)</option>
-                <option value="0">Endless</option>
-            </select>
+        <div>
+            <button class="btn" id="startBtn">PLAY</button>
+            <button class="btn btn-shop" id="openShopBtn">SHOP</button>
         </div>
-        <button class="btn" onclick="window.createRoom()">CREATE ROOM</button>
-        <button class="btn btn-blue" onclick="window.showScreen('mode-selection')">BACK</button>
     </div>
 
-    <div id="lobby-screen" class="screen hidden">
-        <h1>LOBBY</h1>
-        <div class="room-info">
-            <div id="lobbyRoomName" style="font-size:24px; color:#ffd700; margin-bottom:10px;">Room Name</div>
-            <div id="lobbyStatus">Waiting for players...</div>
-            <div class="copy-link" id="copyLinkBtn">Click to copy invite link</div>
-        </div>
-        <div id="lobbyPlayersList" style="margin-bottom:20px;"></div>
-        <button class="btn hidden" id="startGameBtn">START GAME</button>
-        <button class="btn btn-blue" onclick="location.reload()">LEAVE</button>
+    <div id="shop-screen" class="hidden">
+        <h1>ARMORY</h1>
+        <div class="coin-display"><div class="coin-icon"></div> <span id="shopCoinDisplay">0</span></div>
+        <div class="shop-grid" id="shopGrid"></div>
+        <button class="btn btn-back" id="closeShopBtn">BACK</button>
     </div>
 
-    <div id="game-over-screen" class="screen hidden">
+    <div id="game-over-screen" class="hidden">
         <h1>YOU DIED</h1>
+        <p>The horde consumed you.</p>
         <p>Score: <span id="finalScore" style="color: #ffd700;">0</span></p>
-        <button class="btn" onclick="location.reload()">MAIN MENU</button>
+        <p>Coins Earned: <span id="earnedCoins" style="color: #ffd700;">0</span></p>
+        <button class="btn" id="restartBtn">MENU</button>
     </div>
 
-    <div id="toast" class="toast">Link copied!</div>
+    <script>
+        // --- AUDIO SYSTEM ---
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        let mainOsc, mainGain, musicInterval;
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, collection, query, where, getDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // --- FIREBASE CONFIG ---
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'zombie-waves-v1';
-
-        // --- GLOBAL STATE ---
-        let user = null;
-        let isMultiplayer = false;
-        let isHost = false;
-        let currentRoomId = null;
-        let gameRunning = false;
-        let networkPlayers = {};
-        let lastUpdateTime = 0;
-        let lastTime = 0;
-
-        const WEAPONS = {
-            pistol: { name: 'Pistol', damage: 1, rate: 0.4, spread: 0.05, speed: 800, count: 1, color: '#ffeb3b', ammo: Infinity }
-        };
-
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        let player = { 
-            id: null, x: 0, y: 0, r: 15, hp: 100, maxHp: 100, 
-            weapon: 'pistol', ammo: Infinity, cooldown: 0, 
-            score: 0, skin: 'rookie', aimAngle: 0 
-        };
-        let bullets = [], zombies = [], wave = 1, bossActive = false, score = 0, camera = { x: 0, y: 0 };
-        let spawnTimer = 0, spawnRate = 2000, zombiesSpawned = 0, zombiesToSpawn = 0;
-
-        // Audio
-        let audioCtx, musicInterval;
         function initAudio() {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (!audioCtx) audioCtx = new AudioCtx();
             if (audioCtx.state === 'suspended') audioCtx.resume();
         }
-        function playSound(freq, type, duration, vol = 0.05) {
+
+        function playSound(freq, type, duration, vol = 0.1) {
             if (!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
             gain.gain.setValueAtTime(vol, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
         }
 
-        // --- EXPOSE TO GLOBAL ---
-        window.showScreen = (id) => {
-            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-            const el = document.getElementById(id);
-            if(el) el.classList.remove('hidden');
+        function startMusic() {
+            if (musicInterval) clearInterval(musicInterval);
+            let step = 0;
+            const sequence = [110, 123, 130, 146, 110, 123, 164, 146]; // Bassline
+            musicInterval = setInterval(() => {
+                if (!gameRunning) return;
+                const baseFreq = sequence[step % sequence.length];
+                const multiplier = bossActive ? 1.5 : 1.0;
+                playSound(baseFreq * multiplier, 'sawtooth', 0.2, 0.05);
+                if (step % 4 === 0) playSound(60, 'sine', 0.1, 0.2); // Kick
+                step++;
+            }, 250);
+        }
+
+        // --- GAME LOGIC ---
+        const DEFAULT_DATA = { coins: 0, inventory: ['pistol'], upgrades: { hp: 0, speed: 0 } };
+        let gameData = JSON.parse(localStorage.getItem('zombieWavesData')) || JSON.parse(JSON.stringify(DEFAULT_DATA));
+
+        function saveData() {
+            localStorage.setItem('zombieWavesData', JSON.stringify(gameData));
+            updateUI();
+        }
+
+        const WEAPONS = {
+            pistol: { name: 'Pistol', damage: 1, rate: 0.4, spread: 0.05, speed: 800, count: 1, color: '#ffeb3b', ammo: Infinity, automatic: false },
+            smg:    { name: 'SMG',    damage: 0.8, rate: 0.1, spread: 0.15, speed: 900, count: 1, color: '#00e5ff', ammo: 150, automatic: true },
+            shotgun:{ name: 'Shotgun',damage: 1, rate: 0.8, spread: 0.3,  speed: 700, count: 5, color: '#ff5722', ammo: 30, automatic: false }
         };
 
-        window.initSinglePlayer = () => {
-            isMultiplayer = false;
-            isHost = true;
-            window.showScreen('none');
-            startGame();
-        };
+        const SHOP_ITEMS = [
+            { id: 'hp_up', type: 'upgrade', name: 'Max Health +20', cost: 150, maxLevel: 5, upgradeKey: 'hp' },
+            { id: 'spd_up', type: 'upgrade', name: 'Speed +5%', cost: 200, maxLevel: 5, upgradeKey: 'speed' },
+            { id: 'smg', type: 'weapon', name: 'Unlock SMG', cost: 800, weaponId: 'smg' },
+            { id: 'shotgun', type: 'weapon', name: 'Unlock Shotgun', cost: 1500, weaponId: 'shotgun' }
+        ];
 
-        window.createRoom = async () => {
-            if (!user) return;
-            const roomId = Math.random().toString(36).substring(2, 9);
-            const name = document.getElementById('roomNameInput').value || "Slayer's Den";
-            const limit = document.getElementById('waveLimitInput').value;
-            
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
-            await setDoc(roomRef, {
-                id: roomId,
-                name: name,
-                hostId: user.uid,
-                status: 'lobby',
-                waveLimit: parseInt(limit),
-                wave: 1,
-                players: [user.uid],
-                createdAt: Date.now()
+        const SKINS = [
+            { id: 'rookie', name: 'Rookie', color: '#3498db' },
+            { id: 'hitman', name: 'Hitman', color: '#2c3e50' },
+            { id: 'hazmat', name: 'Hazmat', color: '#f1c40f' },
+            { id: 'cyborg', name: 'Cyborg', color: '#bdc3c7' }
+        ];
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const shopScreen = document.getElementById('shop-screen');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const hudCoinsDisplay = document.getElementById('hudCoinsDisplay');
+        const waveDisplay = document.getElementById('waveDisplay');
+        const ammoDisplay = document.getElementById('ammoDisplay');
+        const healthBarFill = document.getElementById('health-bar-fill');
+        const menuCoinDisplay = document.getElementById('menuCoinDisplay');
+        const shopCoinDisplay = document.getElementById('shopCoinDisplay');
+        const bossUI = document.getElementById('boss-ui');
+        const bossBarFill = document.getElementById('boss-bar-fill');
+        const bossNameDisplay = document.getElementById('boss-name');
+
+        let gameRunning = false, animationId, lastTime = 0, score = 0, coinsCollectedInRun = 0, wave = 1;
+        let zombiesSpawned = 0, zombiesToSpawn = 0, spawnTimer = 0, spawnRate = 1000, bossActive = false;
+
+        const keys = { w: false, a: false, s: false, d: false };
+        const mouse = { x: 0, y: 0, down: false };
+        const touches = { leftId: null, rightId: null, leftVec: {x:0,y:0}, rightVec: {x:0,y:0}, leftStart: {x:0,y:0}, rightStart: {x:0,y:0} };
+
+        let player = { x: 0, y: 0, r: 15, baseSpeed: 250, hp: 100, maxHp: 100, weapon: 'pistol', ammo: Infinity, skin: 'rookie', cooldown: 0 };
+        let bullets = [], zombies = [], particles = [], loot = [], camera = { x: 0, y: 0 };
+        let selectedSkinIdx = 0, selectedWeaponIdx = 0;
+        let enemyBullets = [];
+
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function updateUI() {
+            menuCoinDisplay.innerText = gameData.coins;
+            shopCoinDisplay.innerText = gameData.coins;
+            renderShop();
+        }
+
+        function renderShop() {
+            const grid = document.getElementById('shopGrid');
+            grid.innerHTML = '';
+            SHOP_ITEMS.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'shop-item';
+                let desc = '', btnText = 'BUY', disabled = false, isOwned = false;
+                if (item.type === 'upgrade') {
+                    const currentLvl = gameData.upgrades[item.upgradeKey];
+                    desc = `Level: ${currentLvl} / ${item.maxLevel}`;
+                    if (currentLvl >= item.maxLevel) { btnText = 'MAXED'; disabled = true; isOwned = true; }
+                } else if (item.type === 'weapon') {
+                    if (gameData.inventory.includes(item.weaponId)) { btnText = 'OWNED'; disabled = true; isOwned = true; }
+                }
+                if (!disabled && gameData.coins < item.cost) disabled = true;
+                div.innerHTML = `<h3>${item.name}</h3><p>${desc}</p>${!isOwned ? `<div class="cost">🟡 ${item.cost}</div>` : ''}${isOwned ? `<div class="owned-badge">${btnText}</div>` : `<button class="buy-btn" ${disabled ? 'disabled' : ''} onclick="buyItem('${item.id}')">${btnText}</button>`}`;
+                grid.appendChild(div);
             });
+        }
 
-            currentRoomId = roomId;
-            isHost = true;
-            isMultiplayer = true;
-            setupRoomListener(roomId);
-            window.showScreen('lobby-screen');
-        };
-
-        async function joinRoom(roomId) {
-            if (!user) return;
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
-            const snap = await getDoc(roomRef);
-            if (snap.exists()) {
-                await updateDoc(roomRef, { players: arrayUnion(user.uid) });
-                currentRoomId = roomId;
-                isHost = false;
-                isMultiplayer = true;
-                setupRoomListener(roomId);
-                window.showScreen('lobby-screen');
+        window.buyItem = function(id) {
+            const item = SHOP_ITEMS.find(i => i.id === id);
+            if (!item) return;
+            if (gameData.coins >= item.cost) {
+                gameData.coins -= item.cost;
+                if (item.type === 'upgrade') gameData.upgrades[item.upgradeKey]++;
+                else if (item.type === 'weapon') if (!gameData.inventory.includes(item.weaponId)) gameData.inventory.push(item.weaponId);
+                saveData();
+                updateSelectorUI();
+                playSound(600, 'square', 0.1, 0.1);
             }
-        }
-
-        function setupRoomListener(roomId) {
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
-            const playersColRef = collection(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'players');
-
-            onSnapshot(roomRef, (snap) => {
-                if (!snap.exists()) return;
-                const data = snap.data();
-                document.getElementById('lobbyRoomName').innerText = data.name;
-                if (data.status === 'playing' && !gameRunning) startGame();
-                if (isHost) document.getElementById('startGameBtn').classList.remove('hidden');
-            }, (err) => console.error(err));
-
-            onSnapshot(playersColRef, (snap) => {
-                const list = document.getElementById('lobbyPlayersList');
-                list.innerHTML = '';
-                snap.forEach(pDoc => {
-                    const p = pDoc.data();
-                    if (p.id !== user.uid) networkPlayers[p.id] = p;
-                    list.innerHTML += `<div>PLAYER - ${p.id.substring(0,5)}</div>`;
-                });
-            }, (err) => console.error(err));
-
-            setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'players', user.uid), {
-                id: user.uid, x: 0, y: 0, hp: 100, score: 0, aimAngle: 0, weapon: 'pistol'
-            });
-        }
-
-        document.getElementById('startGameBtn').onclick = async () => {
-            if (!isHost) return;
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-            await updateDoc(roomRef, { status: 'playing' });
         };
 
-        document.getElementById('copyLinkBtn').onclick = () => {
-            const url = `${window.location.origin}${window.location.pathname}?room=${currentRoomId}`;
-            const el = document.createElement('textarea');
-            el.value = url; document.body.appendChild(el); el.select();
-            document.execCommand('copy'); document.body.removeChild(el);
-            const toast = document.getElementById('toast');
-            toast.style.opacity = '1';
-            setTimeout(() => toast.style.opacity = '0', 2000);
-        };
-
-        // --- GAME ENGINE ---
-        function startGame() {
+        function initGame() {
             initAudio();
-            resize();
-            gameRunning = true;
-            player.x = canvas.width / 2;
-            player.y = canvas.height / 2;
-            player.hp = 100;
-            wave = 1;
-            score = 0;
-            zombies = []; bullets = [];
+            const hpBonus = gameData.upgrades.hp * 20;
+            const spdBonus = gameData.upgrades.speed * 0.05;
+            player.maxHp = 100 + hpBonus;
+            player.hp = player.maxHp;
+            player.baseSpeed = 250 * (1 + spdBonus);
+            player.x = canvas.width/2; player.y = canvas.height/2;
+            player.skin = SKINS[selectedSkinIdx].id;
+            const startWeaponId = gameData.inventory[selectedWeaponIdx];
+            player.weapon = startWeaponId;
+            player.ammo = WEAPONS[startWeaponId].ammo;
+            score = 0; coinsCollectedInRun = 0; wave = 1; bossActive = false;
+            bullets = []; zombies = []; particles = []; loot = []; enemyBullets = [];
             startWave();
-            requestAnimationFrame(gameLoop);
+            updateHUD();
+            gameRunning = true; lastTime = performance.now(); requestAnimationFrame(gameLoop);
             startMusic();
         }
 
         function startWave() {
             zombiesSpawned = 0;
             bossActive = (wave % 5 === 0);
-            zombiesToSpawn = bossActive ? 1 : 5 + (wave * 2);
-            spawnRate = bossActive ? 3000 : Math.max(300, 1500 - (wave * 100));
+            
+            if (bossActive) {
+                zombiesToSpawn = 1;
+                bossUI.classList.remove('hidden');
+                bossNameDisplay.innerText = wave === 5 ? "THE CRUSHER" : wave === 10 ? "PLAGUE MOTHER" : "BLOOD OVERLORD";
+            } else {
+                zombiesToSpawn = 5 + Math.floor(wave * 2.5);
+                bossUI.classList.add('hidden');
+            }
+            
+            spawnRate = bossActive ? 2000 : Math.max(200, 1000 - (wave * 50)); 
             updateHUD();
         }
 
         function updateHUD() {
-            document.getElementById('scoreDisplay').innerText = score;
-            document.getElementById('waveDisplay').innerText = wave;
-            document.getElementById('health-bar-fill').style.width = (player.hp / player.maxHp) * 100 + '%';
+            scoreDisplay.innerText = score;
+            hudCoinsDisplay.innerText = coinsCollectedInRun;
+            waveDisplay.innerText = wave;
+            const wData = WEAPONS[player.weapon];
+            ammoDisplay.innerText = wData.ammo === Infinity ? '∞' : `${player.ammo}`;
+            const pct = Math.max(0, (player.hp / player.maxHp) * 100);
+            healthBarFill.style.width = pct + '%';
         }
 
-        const keys = {};
-        window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
-        window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
-        window.addEventListener('mousemove', e => {
-            player.aimAngle = Math.atan2(e.clientY + camera.y - player.y, e.clientX + camera.x - player.x);
-        });
-        window.addEventListener('mousedown', () => {
-            if (!gameRunning || player.cooldown > 0) return;
-            const w = WEAPONS[player.weapon];
-            bullets.push({
-                x: player.x + Math.cos(player.aimAngle) * 20, y: player.y + Math.sin(player.aimAngle) * 20,
-                vx: Math.cos(player.aimAngle) * w.speed, vy: Math.sin(player.aimAngle) * w.speed,
-                damage: w.damage, life: 2.0
-            });
-            player.cooldown = w.rate;
-            playSound(500, 'square', 0.05);
-        });
+        function spawnLoot(x, y, isBoss = false) {
+            const rand = Math.random();
+            let type = null, val = 0, color = '#fff', label = '';
+
+            if (isBoss) {
+                type = 'weapon';
+                const options = ['smg', 'shotgun'];
+                val = options[Math.floor(Math.random() * options.length)];
+                color = '#9b59b6'; label = 'ELITE';
+                for(let i=0; i<15; i++) {
+                    loot.push({ x: x+(Math.random()-0.5)*80, y: y+(Math.random()-0.5)*80, type: 'coin', val: 5, label: '$', color: '#ffd700', radius: 12, life: 30, bobOffset: Math.random()*10 });
+                }
+            } else if (rand < 0.03) {
+                const wpns = ['smg', 'shotgun'];
+                const wId = wpns[Math.floor(Math.random()*wpns.length)];
+                type = 'weapon'; val = wId; color = '#9b59b6'; label = 'GUN';
+            } else if (rand < 0.15) { type = 'ammo'; val = 50; color = '#f1c40f'; label = 'AMMO'; }
+            else if (rand < 0.25) { type = 'health'; val = 25; color = '#e74c3c'; label = 'HP'; }
+            else if (rand < 0.60) { type = 'coin'; val = 1; color = '#ffd700'; label = '$'; }
+
+            if (type) {
+                loot.push({ x, y, type, val, label, color, radius: 12, bobOffset: Math.random() * Math.PI * 2, life: 15 });
+            }
+        }
 
         function update(dt) {
-            let mx = 0, my = 0;
-            if (keys['w']) my -= 1; if (keys['s']) my += 1;
-            if (keys['a']) mx -= 1; if (keys['d']) mx += 1;
-            if (mx !== 0 || my !== 0) {
-                const mag = Math.sqrt(mx*mx + my*my);
-                player.x += (mx/mag) * 250 * dt;
-                player.y += (my/mag) * 250 * dt;
+            let dx = 0, dy = 0;
+            if (keys.w) dy -= 1; if (keys.s) dy += 1;
+            if (keys.a) dx -= 1; if (keys.d) dx += 1;
+            if (touches.leftId !== null) { dx = touches.leftVec.x; dy = touches.leftVec.y; }
+            if (dx !== 0 || dy !== 0) {
+                if(touches.leftId === null) { const len = Math.sqrt(dx*dx + dy*dy); dx /= len; dy /= len; }
+                player.x += dx * player.baseSpeed * dt; player.y += dy * player.baseSpeed * dt;
+            }
+            camera.x = player.x - canvas.width/2; camera.y = player.y - canvas.height/2;
+
+            player.cooldown -= dt;
+            let shootX = 0, shootY = 0, shooting = false;
+            if (mouse.down) {
+                const angle = Math.atan2(mouse.y + camera.y - player.y, mouse.x + camera.x - player.x);
+                shootX = Math.cos(angle); shootY = Math.sin(angle); shooting = true;
+            } else if (touches.rightId !== null && (Math.abs(touches.rightVec.x) > 0.1 || Math.abs(touches.rightVec.y) > 0.1)) {
+                shootX = touches.rightVec.x; shootY = touches.rightVec.y;
+                const len = Math.sqrt(shootX*shootX + shootY*shootY); shootX/=len; shootY/=len; shooting = true;
             }
 
-            camera.x = player.x - canvas.width / 2;
-            camera.y = player.y - canvas.height / 2;
-            player.cooldown -= dt;
-
-            if (isMultiplayer && Date.now() - lastUpdateTime > 50 && user) {
-                const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId, 'players', user.uid);
-                updateDoc(pRef, { x: player.x, y: player.y, aimAngle: player.aimAngle, hp: player.hp, score: score }).catch(e => {});
-                lastUpdateTime = Date.now();
+            const wData = WEAPONS[player.weapon];
+            if (shooting && player.cooldown <= 0) {
+                playSound(400 + Math.random()*200, 'square', 0.05, 0.05);
+                for(let i=0; i<wData.count; i++) {
+                    const spread = (Math.random() - 0.5) * wData.spread;
+                    const angle = Math.atan2(shootY, shootX) + spread;
+                    bullets.push({ x: player.x + Math.cos(angle) * player.r * 1.5, y: player.y + Math.sin(angle) * player.r * 1.5, vx: Math.cos(angle) * wData.speed, vy: Math.sin(angle) * wData.speed, damage: wData.damage, life: 1.5 });
+                }
+                player.cooldown = wData.rate;
+                if (wData.ammo !== Infinity) {
+                    player.ammo--;
+                    if (player.ammo <= 0) { player.weapon = 'pistol'; player.ammo = Infinity; }
+                }
+                updateHUD();
             }
 
             for (let i = bullets.length - 1; i >= 0; i--) {
@@ -406,134 +490,351 @@
                 if (b.life <= 0) bullets.splice(i, 1);
             }
 
-            if (isHost) {
-                spawnTimer += dt * 1000;
-                if (spawnTimer > spawnRate && zombiesSpawned < zombiesToSpawn) {
-                    spawnZombie();
-                    zombiesSpawned++;
-                    spawnTimer = 0;
+            for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                let b = enemyBullets[i]; b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
+                if (Math.hypot(b.x - player.x, b.y - player.y) < player.r + 5) {
+                    player.hp -= b.damage;
+                    enemyBullets.splice(i, 1);
+                    playSound(150, 'sine', 0.2, 0.2);
+                    updateHUD();
+                    if (player.hp <= 0) gameOver();
+                    continue;
                 }
+                if (b.life <= 0) enemyBullets.splice(i, 1);
+            }
 
-                zombies.forEach((z, idx) => {
-                    let target = player;
-                    let minDist = Math.hypot(player.x - z.x, player.y - z.y);
-                    Object.values(networkPlayers).forEach(p => {
-                        let d = Math.hypot(p.x - z.x, p.y - z.y);
-                        if (d < minDist) { target = p; minDist = d; }
-                    });
+            spawnTimer += dt * 1000;
+            if (spawnTimer > spawnRate && zombiesSpawned < zombiesToSpawn) {
+                spawnZombie(bossActive);
+                zombiesSpawned++;
+                spawnTimer = 0;
+            }
 
-                    const ang = Math.atan2(target.y - z.y, target.x - z.x);
-                    z.x += Math.cos(ang) * z.speed * dt;
-                    z.y += Math.sin(ang) * z.speed * dt;
+            if (zombiesSpawned >= zombiesToSpawn && zombies.length === 0) {
+                wave++;
+                startWave();
+                player.hp = Math.min(player.maxHp, player.hp + 20);
+                updateHUD();
+            }
 
-                    if (minDist < z.radius + 15) {
-                        if (target.id === player.id) {
-                            player.hp -= z.damage * dt;
-                            updateHUD();
-                            if (player.hp <= 0) gameOver();
+            for (let i = zombies.length - 1; i >= 0; i--) {
+                let z = zombies[i];
+                
+                if (z.type === 'boss') {
+                    // Trigger spawn minions at 50% HP
+                    if (!z.spawnedMinions && z.hp < z.maxHp * 0.5) {
+                        z.spawnedMinions = true;
+                        playSound(100, 'sawtooth', 1.0, 0.3); // Roar sound
+                        createParticles(z.x, z.y, '#fff', 30);
+                        // Spawn 2 Runners and 2 Tanks
+                        for(let j=0; j<2; j++) spawnZombieManual('runner', z.x + (Math.random()-0.5)*100, z.y + (Math.random()-0.5)*100);
+                        for(let j=0; j<2; j++) spawnZombieManual('tank', z.x + (Math.random()-0.5)*100, z.y + (Math.random()-0.5)*100);
+                    }
+
+                    z.moveTimer -= dt;
+                    if (z.moveTimer <= 0) {
+                        if (z.state === 'idle') {
+                            const roll = Math.random();
+                            if (roll < 0.45) {
+                                z.state = 'telegraph';
+                                z.moveTimer = 0.8;
+                                z.nextMove = Math.random() < 0.5 ? 'charge' : 'slam';
+                            } else {
+                                z.moveTimer = 1.0;
+                            }
+                        } else if (z.state === 'telegraph') {
+                            z.state = z.nextMove;
+                            if (z.nextMove === 'charge') {
+                                z.moveTimer = 0.6;
+                                const angle = Math.atan2(player.y - z.y, player.x - z.x);
+                                z.moveDir = { x: Math.cos(angle), y: Math.sin(angle) };
+                                playSound(200, 'sawtooth', 0.5, 0.1);
+                            } else if (z.nextMove === 'slam') {
+                                z.moveTimer = 0.4;
+                                playSound(80, 'sine', 0.4, 0.4);
+                                for(let j=0; j<12; j++) {
+                                    const ang = (Math.PI * 2 / 12) * j;
+                                    enemyBullets.push({ x: z.x, y: z.y, vx: Math.cos(ang) * 450, vy: Math.sin(ang) * 450, damage: 15, life: 2.5 });
+                                }
+                                createParticles(z.x, z.y, '#fff', 20);
+                            }
+                        } else {
+                            z.state = 'idle';
+                            z.moveTimer = 1.2;
                         }
                     }
 
-                    bullets.forEach((b, bIdx) => {
-                        if (Math.hypot(b.x - z.x, b.y - z.y) < z.radius + 5) {
-                            z.hp -= b.damage;
-                            bullets.splice(bIdx, 1);
-                            if (z.hp <= 0) { score += 10; zombies.splice(idx, 1); }
-                        }
-                    });
-                });
+                    if (z.state === 'charge') {
+                        z.vx = z.moveDir.x * z.speed * 6.5;
+                        z.vy = z.moveDir.y * z.speed * 6.5;
+                    } else if (z.state === 'idle') {
+                        let dist = Math.hypot(player.x - z.x, player.y - z.y);
+                        z.vx = ((player.x - z.x) / dist) * z.speed;
+                        z.vy = ((player.y - z.y) / dist) * z.speed;
+                    } else if (z.state === 'telegraph') {
+                        z.vx *= 0.7; z.vy *= 0.7;
+                    } else {
+                        z.vx *= 0.5; z.vy *= 0.5;
+                    }
+                } else {
+                    let dist = Math.hypot(player.x - z.x, player.y - z.y);
+                    if (dist > 0) {
+                        z.vx = ((player.x - z.x) / dist) * z.speed;
+                        z.vy = ((player.y - z.y) / dist) * z.speed;
+                    }
+                }
 
-                if (zombiesSpawned >= zombiesToSpawn && zombies.length === 0) {
-                    wave++; startWave();
+                for (let j=0; j<zombies.length; j++) {
+                    if(i===j) continue;
+                    let other = zombies[j];
+                    let odist = Math.hypot(z.x - other.x, z.y - other.y);
+                    if (odist < z.radius + other.radius && odist > 0) {
+                        z.vx += ((z.x - other.x)/odist) * 50;
+                        z.vy += ((z.y - other.y)/odist) * 50;
+                    }
+                }
+
+                z.x += z.vx * dt; z.y += z.vy * dt;
+
+                let distToPlayer = Math.hypot(player.x - z.x, player.y - z.y);
+                if (distToPlayer < z.radius + player.r) {
+                    player.hp -= (z.type === 'boss' ? (z.state === 'charge' ? 150 : 80) : 40) * dt;
+                    updateHUD();
+                    if (player.hp <= 0) gameOver();
+                }
+
+                if (z.type === 'boss') {
+                    bossBarFill.style.width = (z.hp / z.maxHp) * 100 + '%';
+                }
+
+                for (let bIndex = bullets.length - 1; bIndex >= 0; bIndex--) {
+                    let b = bullets[bIndex];
+                    if (Math.hypot(b.x - z.x, b.y - z.y) < z.radius + 5) {
+                        z.hp -= b.damage;
+                        bullets.splice(bIndex, 1);
+                        createParticles(z.x, z.y, z.color, 2);
+                        if (z.hp <= 0) {
+                            playSound(100, 'sine', 0.3, 0.3);
+                            createParticles(z.x, z.y, '#c62828', z.type === 'boss' ? 100 : 10);
+                            score += (z.type === 'boss' ? 500 : z.type === 'tank' ? 20 : 10);
+                            spawnLoot(z.x, z.y, z.type === 'boss');
+                            if (z.type === 'boss') bossUI.classList.add('hidden');
+                            zombies.splice(i, 1);
+                            updateHUD();
+                        }
+                        break;
+                    }
                 }
             }
-        }
 
-        function spawnZombie() {
-            const ang = Math.random() * Math.PI * 2;
-            const x = player.x + Math.cos(ang) * 600;
-            const y = player.y + Math.sin(ang) * 600;
-            zombies.push({ x, y, radius: 15, speed: 100, hp: 3 + wave, damage: 20 });
+            for (let i = loot.length - 1; i >= 0; i--) {
+                let l = loot[i]; l.life -= dt;
+                if (l.life <= 0) { loot.splice(i, 1); continue; }
+                let dist = Math.hypot(player.x - l.x, player.y - l.y);
+                if (dist < 150) { l.x += (player.x - l.x) * 7 * dt; l.y += (player.y - l.y) * 7 * dt; }
+                if (dist < player.r + l.radius) {
+                    playSound(800, 'sine', 0.1, 0.1);
+                    if (l.type === 'coin') coinsCollectedInRun += l.val;
+                    else if (l.type === 'health') player.hp = Math.min(player.maxHp, player.hp + l.val);
+                    else if (l.type === 'ammo') if (player.weapon !== 'pistol') player.ammo += l.val; else score += 10;
+                    else if (l.type === 'weapon') { player.weapon = l.val; player.ammo = WEAPONS[l.val].ammo; createParticles(player.x, player.y, '#9b59b6', 15); }
+                    updateHUD(); loot.splice(i, 1);
+                }
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].x += particles[i].vx * dt; particles[i].y += particles[i].vy * dt;
+                particles[i].life -= dt * 2.5; if (particles[i].life <= 0) particles.splice(i, 1);
+            }
         }
 
         function draw() {
-            ctx.fillStyle = '#111'; ctx.fillRect(0,0,canvas.width,canvas.height);
-            ctx.strokeStyle = '#222'; ctx.beginPath();
-            for(let i=0; i<canvas.width; i+=100) { ctx.moveTo(i - (camera.x%100), 0); ctx.lineTo(i - (camera.x%100), canvas.height); }
-            for(let i=0; i<canvas.height; i+=100) { ctx.moveTo(0, i - (camera.y%100)); ctx.lineTo(canvas.width, i - (camera.y%100)); }
+            ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 2;
+            const gs = 100;
+            const ox = Math.floor(camera.x / gs) * gs; const oy = Math.floor(camera.y / gs) * gs;
+            ctx.beginPath();
+            for (let x = ox - gs; x < camera.x + canvas.width + gs; x += gs) { ctx.moveTo(x - camera.x, 0); ctx.lineTo(x - camera.x, canvas.height); }
+            for (let y = oy - gs; y < camera.y + canvas.height + gs; y += gs) { ctx.moveTo(0, y - camera.y); ctx.lineTo(canvas.width, y - camera.y); }
             ctx.stroke();
 
-            zombies.forEach(z => {
-                ctx.fillStyle = '#558b2f';
-                ctx.beginPath(); ctx.arc(z.x - camera.x, z.y - camera.y, z.radius, 0, Math.PI*2); ctx.fill();
-            });
+            for (let l of loot) {
+                const bob = Math.sin(performance.now() / 200 + l.bobOffset) * 4;
+                ctx.fillStyle = l.color; ctx.beginPath(); ctx.arc(l.x - camera.x, l.y - camera.y + bob, l.radius, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.fillStyle = '#000'; ctx.font = 'bold 12px Roboto'; ctx.textAlign = 'center'; ctx.fillText(l.label, l.x - camera.x, l.y - camera.y + bob + 4);
+            }
 
-            ctx.fillStyle = '#ffeb3b';
-            bullets.forEach(b => {
-                ctx.beginPath(); ctx.arc(b.x - camera.x, b.y - camera.y, 4, 0, Math.PI*2); ctx.fill();
-            });
+            for (let p of particles) { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x - camera.x, p.y - camera.y, p.size, p.size); }
+            ctx.globalAlpha = 1.0;
 
-            drawEntity(player.x - camera.x, player.y - camera.y, player.aimAngle, '#3498db', 'YOU');
-            Object.values(networkPlayers).forEach(p => {
-                drawEntity(p.x - camera.x, p.y - camera.y, p.aimAngle, '#e74c3c', p.id.substring(0,5));
-            });
+            for (let b of enemyBullets) {
+                ctx.fillStyle = '#ff0000'; ctx.shadowBlur = 10; ctx.shadowColor = 'red';
+                ctx.beginPath(); ctx.arc(b.x - camera.x, b.y - camera.y, 7, 0, Math.PI*2); ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            for (let b of bullets) { ctx.fillStyle = '#ffeb3b'; ctx.beginPath(); ctx.arc(b.x - camera.x, b.y - camera.y, 4, 0, Math.PI*2); ctx.fill(); }
+
+            for (let z of zombies) {
+                let drawCol = z.color;
+                if (z.type === 'boss' && z.state === 'telegraph' && Math.floor(performance.now()/80)%2 === 0) {
+                    drawCol = '#fff';
+                }
+                ctx.fillStyle = drawCol; ctx.beginPath(); ctx.arc(z.x - camera.x, z.y - camera.y, z.radius, 0, Math.PI*2); ctx.fill();
+                
+                ctx.fillStyle = '#f00'; 
+                let ang = Math.atan2(player.y - z.y, player.x - z.x);
+                ctx.beginPath();
+                ctx.arc(z.x - camera.x + Math.cos(ang-0.5)*z.radius*0.6, z.y - camera.y + Math.sin(ang-0.5)*z.radius*0.6, z.radius/5, 0, Math.PI*2);
+                ctx.arc(z.x - camera.x + Math.cos(ang+0.5)*z.radius*0.6, z.y - camera.y + Math.sin(ang+0.5)*z.radius*0.6, z.radius/5, 0, Math.PI*2);
+                ctx.fill();
+
+                if (z.type !== 'boss' && z.maxHp > 3) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(z.x-camera.x-15, z.y-camera.y-z.radius-12, 30, 6);
+                    ctx.fillStyle = '#ff0000'; ctx.fillRect(z.x-camera.x-15, z.y-camera.y-z.radius-12, 30*(z.hp/z.maxHp), 6);
+                }
+            }
+
+            let aimX, aimY;
+            if (touches.rightId!==null && (touches.rightVec.x!==0||touches.rightVec.y!==0)) { aimX=touches.rightVec.x; aimY=touches.rightVec.y; }
+            else { let ang=Math.atan2(mouse.y+camera.y-player.y, mouse.x+camera.x-player.x); aimX=Math.cos(ang); aimY=Math.sin(ang); }
+            drawPlayer(ctx, player.x-camera.x, player.y-camera.y, player.r, aimX, aimY, player.skin);
+
+            if (touches.leftId!==null) {
+                ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(touches.leftStart.x, touches.leftStart.y, 50,0,Math.PI*2); ctx.stroke();
+                ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.arc(touches.leftStart.x+touches.leftVec.x*50, touches.leftStart.y+touches.leftVec.y*50, 20,0,Math.PI*2); ctx.fill();
+            }
+            if (touches.rightId!==null) {
+                ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(touches.rightStart.x, touches.rightStart.y, 50,0,Math.PI*2); ctx.stroke();
+                ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.arc(touches.rightStart.x+touches.rightVec.x*50, touches.rightStart.y+touches.rightVec.y*50, 20,0,Math.PI*2); ctx.fill();
+            }
         }
 
-        function drawEntity(x, y, angle, col, name) {
-            ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
-            ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0,0,15,0,Math.PI*2); ctx.fill();
-            ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(10,0); ctx.lineTo(25,0); ctx.stroke();
-            ctx.restore();
-            ctx.fillStyle = '#fff'; ctx.font = '12px Arial'; ctx.textAlign = 'center';
-            ctx.fillText(name, x, y - 25);
+        function drawPlayer(c, x, y, r, aimX, aimY, skinId) {
+            c.save(); c.translate(x, y); c.rotate(Math.atan2(aimY, aimX));
+            const color = SKINS.find(s=>s.id===skinId).color;
+            c.fillStyle = color; c.beginPath(); c.arc(0,0,r,0,Math.PI*2); c.fill();
+            if (skinId==='rookie') { c.fillStyle='#2980b9'; c.beginPath(); c.arc(0,0,r*0.7,0,Math.PI*2); c.fill(); }
+            else if (skinId==='hitman') { c.fillStyle='#e74c3c'; c.beginPath(); c.moveTo(0,0); c.lineTo(r*0.5,r*0.4); c.lineTo(r*0.5,-r*0.4); c.fill(); }
+            else if (skinId==='hazmat') { c.fillStyle='#222'; c.fillRect(0,-r*0.6,r*0.8,r*1.2); }
+            else if (skinId==='cyborg') { c.fillStyle='#f00'; c.shadowColor='#f00'; c.shadowBlur=10; c.beginPath(); c.arc(r*0.4,0,r*0.25,0,Math.PI*2); c.fill(); c.shadowBlur=0; }
+            c.strokeStyle = '#111'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath();
+            if (player.weapon === 'pistol') { c.moveTo(r*0.5, 0); c.lineTo(r+10, 0); }
+            else if (player.weapon === 'smg') { c.lineWidth = 4; c.moveTo(r*0.5, 5); c.lineTo(r+12, 5); c.moveTo(r*0.5, -5); c.lineTo(r+12, -5); }
+            else if (player.weapon === 'shotgun') { c.lineWidth = 8; c.moveTo(r*0.5, 0); c.lineTo(r+10, 0); }
+            c.stroke(); c.restore();
         }
 
-        function gameLoop(time) {
+        function spawnZombie(isBoss = false) {
+            let x, y, buffer=100;
+            if (Math.random()<0.5) { x = Math.random()<0.5 ? camera.x-buffer : camera.x+canvas.width+buffer; y = Math.random()*(canvas.height+2*buffer) + camera.y-buffer; }
+            else { x = Math.random()*(canvas.width+2*buffer) + camera.x-buffer; y = Math.random()<0.5 ? camera.y-buffer : camera.y+canvas.height+buffer; }
+
+            if (isBoss) {
+                let hp = 100 + (wave * 60);
+                zombies.push({
+                    x, y, radius: 55, speed: 65, hp, maxHp: hp, color: '#4a148c', 
+                    vx: 0, vy: 0, type: 'boss', state: 'idle', moveTimer: 1.5, nextMove: '', moveDir: {x:0, y:0}, spawnedMinions: false
+                });
+            } else {
+                let rVal = Math.random();
+                let type='normal';
+                if (wave>3 && rVal<0.2) type='runner';
+                else if (wave>5 && rVal<0.3) type='tank';
+                spawnZombieManual(type, x, y);
+            }
+        }
+
+        function spawnZombieManual(type, x, y) {
+            let speed=50+Math.random()*50+(wave*5), hp=2+Math.floor(wave/2), r=15, col='#558b2f';
+            if (type === 'runner') { speed*=1.8; hp=Math.floor(hp*0.6)||1; r=12; col='#7cb342'; }
+            else if (type === 'tank') { speed*=0.5; hp*=4; r=25; col='#1b5e20'; }
+            zombies.push({x, y, radius:r, speed, hp, maxHp:hp, color:col, vx:0, vy:0, type});
+        }
+
+        function createParticles(x, y, col, count) {
+            for(let i=0; i<count; i++) particles.push({x, y, vx:(Math.random()-0.5)*350, vy:(Math.random()-0.5)*350, life:1.2, color:col, size:Math.random()*5+2});
+        }
+
+        function gameLoop(timestamp) {
             if (!gameRunning) return;
-            const dt = Math.min(0.1, (time - lastTime) / 1000 || 0);
-            lastTime = time;
+            let dt = (timestamp - lastTime) / 1000;
+            if (dt > 0.1) dt = 0.1;
+            lastTime = timestamp;
             update(dt); draw();
-            requestAnimationFrame(gameLoop);
-        }
-
-        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-        window.addEventListener('resize', resize);
-
-        function startMusic() {
-            let step = 0;
-            musicInterval = setInterval(() => {
-                if (!gameRunning) return;
-                playSound([110, 130, 146, 164][step%4], 'sawtooth', 0.2, 0.02);
-                step++;
-            }, 300);
+            animationId = requestAnimationFrame(gameLoop);
         }
 
         function gameOver() {
-            gameRunning = false;
+            gameRunning = false; cancelAnimationFrame(animationId);
+            const bonusCoins = Math.floor(score / 5);
+            const totalEarned = coinsCollectedInRun + bonusCoins;
+            gameData.coins += totalEarned; saveData();
             document.getElementById('finalScore').innerText = score;
-            window.showScreen('game-over-screen');
-            if(musicInterval) clearInterval(musicInterval);
+            document.getElementById('earnedCoins').innerText = totalEarned;
+            gameOverScreen.classList.remove('hidden');
+            bossUI.classList.add('hidden');
+            if (musicInterval) clearInterval(musicInterval);
+            playSound(100, 'sawtooth', 1.0, 0.2);
         }
 
-        // --- AUTH & START ---
-        const startApp = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
-            onAuthStateChanged(auth, (u) => {
-                user = u;
-                if(user) {
-                    player.id = user.uid;
-                    const params = new URLSearchParams(window.location.search);
-                    const joinId = params.get('room');
-                    if(joinId) joinRoom(joinId);
-                }
-            });
-        };
+        function updateSelectorUI() {
+            const skin = SKINS[selectedSkinIdx];
+            document.getElementById('skinName').innerText = skin.name;
+            const sCtx = document.getElementById('skinPreviewCanvas').getContext('2d');
+            sCtx.clearRect(0,0,60,60); sCtx.save(); sCtx.translate(30,30); sCtx.scale(1.5,1.5);
+            drawPlayer(sCtx, 0,0, 15, 1,0, skin.id); sCtx.restore();
+            const list = gameData.inventory;
+            if (selectedWeaponIdx >= list.length) selectedWeaponIdx = 0;
+            const wId = list[selectedWeaponIdx];
+            document.getElementById('weaponName').innerText = WEAPONS[wId].name;
+        }
 
-        startApp();
+        document.getElementById('prevSkin').onclick = () => { selectedSkinIdx = (selectedSkinIdx - 1 + SKINS.length) % SKINS.length; updateSelectorUI(); playSound(500, 'sine', 0.05, 0.1); };
+        document.getElementById('nextSkin').onclick = () => { selectedSkinIdx = (selectedSkinIdx + 1) % SKINS.length; updateSelectorUI(); playSound(500, 'sine', 0.05, 0.1); };
+        document.getElementById('prevWeapon').onclick = () => { const list = gameData.inventory; selectedWeaponIdx = (selectedWeaponIdx - 1 + list.length) % list.length; updateSelectorUI(); playSound(500, 'sine', 0.05, 0.1); };
+        document.getElementById('nextWeapon').onclick = () => { const list = gameData.inventory; selectedWeaponIdx = (selectedWeaponIdx + 1) % list.length; updateSelectorUI(); playSound(500, 'sine', 0.05, 0.1); };
+        document.getElementById('startBtn').onclick = () => { startScreen.classList.add('hidden'); initGame(); };
+        document.getElementById('restartBtn').onclick = () => { gameOverScreen.classList.add('hidden'); startScreen.classList.remove('hidden'); updateUI(); };
+        document.getElementById('openShopBtn').onclick = () => { shopScreen.classList.remove('hidden'); updateUI(); };
+        document.getElementById('closeShopBtn').onclick = () => { shopScreen.classList.add('hidden'); updateSelectorUI(); };
+
+        window.addEventListener('keydown', e => { const k=e.key.toLowerCase(); if(k==='w'||k==='arrowup') keys.w=true; if(k==='a'||k==='arrowleft') keys.a=true; if(k==='s'||k==='arrowdown') keys.s=true; if(k==='d'||k==='arrowright') keys.d=true; });
+        window.addEventListener('keyup', e => { const k=e.key.toLowerCase(); if(k==='w'||k==='arrowup') keys.w=false; if(k==='a'||k==='arrowleft') keys.a=false; if(k==='s'||k==='arrowdown') keys.s=false; if(k==='d'||k==='arrowright') keys.d=false; });
+        window.addEventListener('mousemove', e => { mouse.x=e.clientX; mouse.y=e.clientY; });
+        window.addEventListener('mousedown', () => mouse.down=true);
+        window.addEventListener('mouseup', () => mouse.down=false);
+
+        const handleTouch = (e) => {
+            e.preventDefault();
+            for(let i=0; i<e.changedTouches.length; i++) {
+                let t = e.changedTouches[i];
+                if(t.clientX < window.innerWidth/2) {
+                    if(e.type==='touchstart' && touches.leftId===null) { touches.leftId=t.identifier; touches.leftStart={x:t.clientX, y:t.clientY}; touches.leftVec={x:0,y:0}; }
+                    else if(e.type==='touchmove' && t.identifier===touches.leftId) {
+                        let dx=t.clientX-touches.leftStart.x, dy=t.clientY-touches.leftStart.y;
+                        let dist=Math.sqrt(dx*dx+dy*dy), max=50; if(dist>max) { dx=(dx/dist)*max; dy=(dy/dist)*max; }
+                        touches.leftVec={x:dx/max, y:dy/max};
+                    }
+                    else if((e.type==='touchend'||e.type==='touchcancel') && t.identifier===touches.leftId) { touches.leftId=null; touches.leftVec={x:0,y:0}; }
+                } else {
+                    if(e.type==='touchstart' && touches.rightId===null) { touches.rightId=t.identifier; touches.rightStart={x:t.clientX, y:t.clientY}; touches.rightVec={x:0,y:0}; }
+                    else if(e.type==='touchmove' && t.identifier===touches.rightId) {
+                        let dx=t.clientX-touches.rightStart.x, dy=t.clientY-touches.rightStart.y;
+                        let dist=Math.sqrt(dx*dx+dy*dy), max=50; if(dist>max) { dx=(dx/dist)*max; dy=(dy/dist)*max; }
+                        touches.rightVec={x:dx/max, y:dy/max};
+                    }
+                    else if((e.type==='touchend'||e.type==='touchcancel') && t.identifier===touches.rightId) { touches.rightId=null; touches.rightVec={x:0,y:0}; }
+                }
+            }
+        };
+        canvas.addEventListener('touchstart', handleTouch, {passive:false});
+        canvas.addEventListener('touchmove', handleTouch, {passive:false});
+        canvas.addEventListener('touchend', handleTouch);
+        canvas.addEventListener('touchcancel', handleTouch);
+
+        updateUI(); updateSelectorUI();
     </script>
 </body>
 </html>
