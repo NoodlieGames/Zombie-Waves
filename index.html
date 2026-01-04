@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zombie Waves: Multiplayer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Creepster&family=Roboto:wght@400;700&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            font-family: 'Roboto', sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+
+        #gameCanvas { display: block; }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+            color: #fff;
+            text-shadow: 2px 2px 0 #000;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .hud-col { display: flex; flex-direction: column; gap: 5px; }
+        .score-box span { color: #ffd700; }
+        .wave-box span { color: #ff4444; }
+        .ammo-box { color: #00e5ff; margin-top: 5px; font-size: 18px; }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            pointer-events: auto;
+            z-index: 100;
+            text-align: center;
+        }
+
+        h1 {
+            font-family: 'Creepster', cursive;
+            font-size: 64px;
+            color: #bd0000;
+            margin: 10px 0;
+            text-shadow: 0 0 15px #500000;
+        }
+
+        .btn {
+            background: #bd0000;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 22px;
+            font-family: 'Creepster', cursive;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: transform 0.1s, background 0.2s;
+            box-shadow: 0 4px 0 #600000;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 8px;
+        }
+        .btn:hover { background: #ff1a1a; transform: scale(1.05); }
+        .btn:active { transform: scale(0.95); box-shadow: 0 2px 0 #600000; }
+        .btn-blue { background: #3498db; box-shadow: 0 4px 0 #2980b9; }
+
+        .hidden { display: none !important; }
+
+        #health-bar-container { width: 200px; height: 15px; background: #333; border: 1px solid #fff; border-radius: 8px; overflow: hidden; margin-top: 5px; }
+        #health-bar-fill { width: 100%; height: 100%; background: #00ff00; transition: width 0.2s; }
+
+        .form-group { margin: 15px 0; width: 300px; text-align: left; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #ccc; }
+        input, select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #222; color: #fff; }
+
+        .room-info { background: #222; padding: 20px; border-radius: 10px; border: 1px solid #bd0000; margin-bottom: 20px; }
+        .copy-link { background: #333; padding: 10px; border-radius: 5px; font-family: monospace; cursor: pointer; margin-top: 10px; word-break: break-all; }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #27ae60;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <div class="hud-top">
+            <div class="hud-col">
+                <div class="score-box">SCORE: <span id="scoreDisplay">0</span></div>
+                <div class="ammo-box" id="ammoDisplay">∞ / ∞</div>
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:center;">
+                <div class="wave-box">WAVE <span id="waveDisplay">1</span></div>
+                <div id="health-bar-container"><div id="health-bar-fill"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-menu" class="screen">
+        <h1>ZOMBIE WAVES</h1>
+        <button class="btn" onclick="window.showScreen('mode-selection')">START GAME</button>
+        <button class="btn btn-blue">ARMORY</button>
+    </div>
+
+    <div id="mode-selection" class="screen hidden">
+        <h1>CHOOSE MODE</h1>
+        <button class="btn" onclick="window.initSinglePlayer()">SINGLE PLAYER</button>
+        <button class="btn btn-blue" onclick="window.showScreen('multiplayer-setup')">MULTIPLAYER</button>
+        <button class="btn btn-blue" style="background:#555; box-shadow:0 4px 0 #333" onclick="window.showScreen('main-menu')">BACK</button>
+    </div>
+
+    <div id="multiplayer-setup" class="screen hidden">
+        <h1>MULTIPLAYER</h1>
+        <div class="form-group">
+            <label>Room Name</label>
+            <input type="text" id="roomNameInput" placeholder="Slayer's Den">
+        </div>
+        <div class="form-group">
+            <label>Wave Limit</label>
+            <select id="waveLimitInput">
+                <option value="10">Short (10 Waves)</option>
+                <option value="20">Medium (20 Waves)</option>
+                <option value="0">Endless</option>
+            </select>
+        </div>
+        <button class="btn" onclick="window.createRoom()">CREATE ROOM</button>
+        <button class="btn btn-blue" onclick="window.showScreen('mode-selection')">BACK</button>
+    </div>
+
+    <div id="lobby-screen" class="screen hidden">
+        <h1>LOBBY</h1>
+        <div class="room-info">
+            <div id="lobbyRoomName" style="font-size:24px; color:#ffd700; margin-bottom:10px;">Room Name</div>
+            <div id="lobbyStatus">Waiting for players...</div>
+            <div class="copy-link" id="copyLinkBtn">Click to copy invite link</div>
+        </div>
+        <div id="lobbyPlayersList" style="margin-bottom:20px;"></div>
+        <button class="btn hidden" id="startGameBtn">START GAME</button>
+        <button class="btn btn-blue" onclick="location.reload()">LEAVE</button>
+    </div>
+
+    <div id="game-over-screen" class="screen hidden">
+        <h1>YOU DIED</h1>
+        <p>Score: <span id="finalScore" style="color: #ffd700;">0</span></p>
+        <button class="btn" onclick="location.reload()">MAIN MENU</button>
+    </div>
+
+    <div id="toast" class="toast">Link copied!</div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, collection, query, where, getDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- FIREBASE CONFIG ---
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'zombie-waves-v1';
+
+        // --- GLOBAL STATE ---
+        let user = null;
+        let isMultiplayer = false;
+        let isHost = false;
+        let currentRoomId = null;
+        let gameRunning = false;
+        let networkPlayers = {};
+        let lastUpdateTime = 0;
+        let lastTime = 0;
+
+        const WEAPONS = {
+            pistol: { name: 'Pistol', damage: 1, rate: 0.4, spread: 0.05, speed: 800, count: 1, color: '#ffeb3b', ammo: Infinity }
+        };
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let player = { 
+            id: null, x: 0, y: 0, r: 15, hp: 100, maxHp: 100, 
+            weapon: 'pistol', ammo: Infinity, cooldown: 0, 
+            score: 0, skin: 'rookie', aimAngle: 0 
+        };
+        let bullets = [], zombies = [], wave = 1, bossActive = false, score = 0, camera = { x: 0, y: 0 };
+        let spawnTimer = 0, spawnRate = 2000, zombiesSpawned = 0, zombiesToSpawn = 0;
+
+        // Audio
+        let audioCtx, musicInterval;
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+        function playSound(freq, type, duration, vol = 0.05) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        }
+
+        // --- EXPOSE TO GLOBAL ---
+        window.showScreen = (id) => {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            const el = document.getElementById(id);
+            if(el) el.classList.remove('hidden');
+        };
+
+        window.initSinglePlayer = () => {
+            isMultiplayer = false;
+            isHost = true;
+            window.showScreen('none');
+            startGame();
+        };
+
+        window.createRoom = async () => {
+            if (!user) return;
+            const roomId = Math.random().toString(36).substring(2, 9);
+            const name = document.getElementById('roomNameInput').value || "Slayer's Den";
+            const limit = document.getElementById('waveLimitInput').value;
+            
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
+            await setDoc(roomRef, {
+                id: roomId,
+                name: name,
+                hostId: user.uid,
+                status: 'lobby',
+                waveLimit: parseInt(limit),
+                wave: 1,
+                players: [user.uid],
+                createdAt: Date.now()
+            });
+
+            currentRoomId = roomId;
+            isHost = true;
+            isMultiplayer = true;
+            setupRoomListener(roomId);
+            window.showScreen('lobby-screen');
+        };
+
+        async function joinRoom(roomId) {
+            if (!user) return;
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
+            const snap = await getDoc(roomRef);
+            if (snap.exists()) {
+                await updateDoc(roomRef, { players: arrayUnion(user.uid) });
+                currentRoomId = roomId;
+                isHost = false;
+                isMultiplayer = true;
+                setupRoomListener(roomId);
+                window.showScreen('lobby-screen');
+            }
+        }
+
+        function setupRoomListener(roomId) {
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
+            const playersColRef = collection(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'players');
+
+            onSnapshot(roomRef, (snap) => {
+                if (!snap.exists()) return;
+                const data = snap.data();
+                document.getElementById('lobbyRoomName').innerText = data.name;
+                if (data.status === 'playing' && !gameRunning) startGame();
+                if (isHost) document.getElementById('startGameBtn').classList.remove('hidden');
+            }, (err) => console.error(err));
+
+            onSnapshot(playersColRef, (snap) => {
+                const list = document.getElementById('lobbyPlayersList');
+                list.innerHTML = '';
+                snap.forEach(pDoc => {
+                    const p = pDoc.data();
+                    if (p.id !== user.uid) networkPlayers[p.id] = p;
+                    list.innerHTML += `<div>PLAYER - ${p.id.substring(0,5)}</div>`;
+                });
+            }, (err) => console.error(err));
+
+            setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'players', user.uid), {
+                id: user.uid, x: 0, y: 0, hp: 100, score: 0, aimAngle: 0, weapon: 'pistol'
+            });
+        }
+
+        document.getElementById('startGameBtn').onclick = async () => {
+            if (!isHost) return;
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+            await updateDoc(roomRef, { status: 'playing' });
+        };
+
+        document.getElementById('copyLinkBtn').onclick = () => {
+            const url = `${window.location.origin}${window.location.pathname}?room=${currentRoomId}`;
+            const el = document.createElement('textarea');
+            el.value = url; document.body.appendChild(el); el.select();
+            document.execCommand('copy'); document.body.removeChild(el);
+            const toast = document.getElementById('toast');
+            toast.style.opacity = '1';
+            setTimeout(() => toast.style.opacity = '0', 2000);
+        };
+
+        // --- GAME ENGINE ---
+        function startGame() {
+            initAudio();
+            resize();
+            gameRunning = true;
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
+            player.hp = 100;
+            wave = 1;
+            score = 0;
+            zombies = []; bullets = [];
+            startWave();
+            requestAnimationFrame(gameLoop);
+            startMusic();
+        }
+
+        function startWave() {
+            zombiesSpawned = 0;
+            bossActive = (wave % 5 === 0);
+            zombiesToSpawn = bossActive ? 1 : 5 + (wave * 2);
+            spawnRate = bossActive ? 3000 : Math.max(300, 1500 - (wave * 100));
+            updateHUD();
+        }
+
+        function updateHUD() {
+            document.getElementById('scoreDisplay').innerText = score;
+            document.getElementById('waveDisplay').innerText = wave;
+            document.getElementById('health-bar-fill').style.width = (player.hp / player.maxHp) * 100 + '%';
+        }
+
+        const keys = {};
+        window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+        window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+        window.addEventListener('mousemove', e => {
+            player.aimAngle = Math.atan2(e.clientY + camera.y - player.y, e.clientX + camera.x - player.x);
+        });
+        window.addEventListener('mousedown', () => {
+            if (!gameRunning || player.cooldown > 0) return;
+            const w = WEAPONS[player.weapon];
+            bullets.push({
+                x: player.x + Math.cos(player.aimAngle) * 20, y: player.y + Math.sin(player.aimAngle) * 20,
+                vx: Math.cos(player.aimAngle) * w.speed, vy: Math.sin(player.aimAngle) * w.speed,
+                damage: w.damage, life: 2.0
+            });
+            player.cooldown = w.rate;
+            playSound(500, 'square', 0.05);
+        });
+
+        function update(dt) {
+            let mx = 0, my = 0;
+            if (keys['w']) my -= 1; if (keys['s']) my += 1;
+            if (keys['a']) mx -= 1; if (keys['d']) mx += 1;
+            if (mx !== 0 || my !== 0) {
+                const mag = Math.sqrt(mx*mx + my*my);
+                player.x += (mx/mag) * 250 * dt;
+                player.y += (my/mag) * 250 * dt;
+            }
+
+            camera.x = player.x - canvas.width / 2;
+            camera.y = player.y - canvas.height / 2;
+            player.cooldown -= dt;
+
+            if (isMultiplayer && Date.now() - lastUpdateTime > 50 && user) {
+                const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId, 'players', user.uid);
+                updateDoc(pRef, { x: player.x, y: player.y, aimAngle: player.aimAngle, hp: player.hp, score: score }).catch(e => {});
+                lastUpdateTime = Date.now();
+            }
+
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let b = bullets[i]; b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
+                if (b.life <= 0) bullets.splice(i, 1);
+            }
+
+            if (isHost) {
+                spawnTimer += dt * 1000;
+                if (spawnTimer > spawnRate && zombiesSpawned < zombiesToSpawn) {
+                    spawnZombie();
+                    zombiesSpawned++;
+                    spawnTimer = 0;
+                }
+
+                zombies.forEach((z, idx) => {
+                    let target = player;
+                    let minDist = Math.hypot(player.x - z.x, player.y - z.y);
+                    Object.values(networkPlayers).forEach(p => {
+                        let d = Math.hypot(p.x - z.x, p.y - z.y);
+                        if (d < minDist) { target = p; minDist = d; }
+                    });
+
+                    const ang = Math.atan2(target.y - z.y, target.x - z.x);
+                    z.x += Math.cos(ang) * z.speed * dt;
+                    z.y += Math.sin(ang) * z.speed * dt;
+
+                    if (minDist < z.radius + 15) {
+                        if (target.id === player.id) {
+                            player.hp -= z.damage * dt;
+                            updateHUD();
+                            if (player.hp <= 0) gameOver();
+                        }
+                    }
+
+                    bullets.forEach((b, bIdx) => {
+                        if (Math.hypot(b.x - z.x, b.y - z.y) < z.radius + 5) {
+                            z.hp -= b.damage;
+                            bullets.splice(bIdx, 1);
+                            if (z.hp <= 0) { score += 10; zombies.splice(idx, 1); }
+                        }
+                    });
+                });
+
+                if (zombiesSpawned >= zombiesToSpawn && zombies.length === 0) {
+                    wave++; startWave();
+                }
+            }
+        }
+
+        function spawnZombie() {
+            const ang = Math.random() * Math.PI * 2;
+            const x = player.x + Math.cos(ang) * 600;
+            const y = player.y + Math.sin(ang) * 600;
+            zombies.push({ x, y, radius: 15, speed: 100, hp: 3 + wave, damage: 20 });
+        }
+
+        function draw() {
+            ctx.fillStyle = '#111'; ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.strokeStyle = '#222'; ctx.beginPath();
+            for(let i=0; i<canvas.width; i+=100) { ctx.moveTo(i - (camera.x%100), 0); ctx.lineTo(i - (camera.x%100), canvas.height); }
+            for(let i=0; i<canvas.height; i+=100) { ctx.moveTo(0, i - (camera.y%100)); ctx.lineTo(canvas.width, i - (camera.y%100)); }
+            ctx.stroke();
+
+            zombies.forEach(z => {
+                ctx.fillStyle = '#558b2f';
+                ctx.beginPath(); ctx.arc(z.x - camera.x, z.y - camera.y, z.radius, 0, Math.PI*2); ctx.fill();
+            });
+
+            ctx.fillStyle = '#ffeb3b';
+            bullets.forEach(b => {
+                ctx.beginPath(); ctx.arc(b.x - camera.x, b.y - camera.y, 4, 0, Math.PI*2); ctx.fill();
+            });
+
+            drawEntity(player.x - camera.x, player.y - camera.y, player.aimAngle, '#3498db', 'YOU');
+            Object.values(networkPlayers).forEach(p => {
+                drawEntity(p.x - camera.x, p.y - camera.y, p.aimAngle, '#e74c3c', p.id.substring(0,5));
+            });
+        }
+
+        function drawEntity(x, y, angle, col, name) {
+            ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
+            ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0,0,15,0,Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(10,0); ctx.lineTo(25,0); ctx.stroke();
+            ctx.restore();
+            ctx.fillStyle = '#fff'; ctx.font = '12px Arial'; ctx.textAlign = 'center';
+            ctx.fillText(name, x, y - 25);
+        }
+
+        function gameLoop(time) {
+            if (!gameRunning) return;
+            const dt = Math.min(0.1, (time - lastTime) / 1000 || 0);
+            lastTime = time;
+            update(dt); draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize);
+
+        function startMusic() {
+            let step = 0;
+            musicInterval = setInterval(() => {
+                if (!gameRunning) return;
+                playSound([110, 130, 146, 164][step%4], 'sawtooth', 0.2, 0.02);
+                step++;
+            }, 300);
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            document.getElementById('finalScore').innerText = score;
+            window.showScreen('game-over-screen');
+            if(musicInterval) clearInterval(musicInterval);
+        }
+
+        // --- AUTH & START ---
+        const startApp = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+            onAuthStateChanged(auth, (u) => {
+                user = u;
+                if(user) {
+                    player.id = user.uid;
+                    const params = new URLSearchParams(window.location.search);
+                    const joinId = params.get('room');
+                    if(joinId) joinRoom(joinId);
+                }
+            });
+        };
+
+        startApp();
+    </script>
+</body>
+</html>
